@@ -24,8 +24,9 @@ def load_task() -> list:  # '-> list' adalah Type Hint bahwa fungsi ini mengemba
         return []
 
 
-def save_task(tasks: list):  # ': list' adalah Type Hint untuk parameter
-    with open(FILE_NAME, 'w') as file:
+# Tambahkan parameter opsional 'filename=FILE_NAME'
+def save_task(tasks: list, filename=FILE_NAME):
+    with open(filename, 'w') as file:
         json.dump(tasks, file, indent=4)
 
 
@@ -85,13 +86,13 @@ def display_tasks(tasks: list):
             input("Harap masukkan angka yang valid! Tekan Enter untuk mengulang...")
 
 
-def add_task(tasks: list):
+# Tambahkan juga di add_task agar ia tahu harus save ke mana
+def add_task(tasks: list, filename=FILE_NAME):
     clear_screen()
     print("\n--- Tambah Tugas Baru ---")
 
-    # Validasi input agar judul tidak boleh kosong
     while True:
-        title = input("Masukkan judul tugas: ").strip()  # .strip() mirip trim() di PHP/JS
+        title = input("Masukkan judul tugas: ").strip()
         if title:
             break
         print("Judul tidak boleh kosong!\n")
@@ -106,11 +107,11 @@ def add_task(tasks: list):
         "done": False,
     }
     tasks.append(new_task)
-    save_task(tasks)
+    save_task(tasks, filename)  # Kirim parameter filename ke save_task
     input("\nTugas berhasil ditambahkan! Tekan Enter untuk kembali...")
 
 
-def complete_task(tasks: list):
+def complete_task(tasks: list, filename=FILE_NAME):
     clear_screen()
     print("\n--- Tandai Tugas Selesai ---")
     if not print_task_list(tasks):
@@ -126,7 +127,7 @@ def complete_task(tasks: list):
                 print("Tugas ini memang sudah selesai.")
             else:
                 tasks[index]["done"] = True
-                save_task(tasks)
+                save_task(tasks, filename)
                 print("Tugas berhasil ditandai selesai!")
         else:
             print("Nomor tugas tidak valid!")
@@ -136,7 +137,7 @@ def complete_task(tasks: list):
     input("Tekan Enter untuk kembali...")
 
 
-def delete_task(tasks: list):
+def delete_task(tasks: list, filename=FILE_NAME):
     clear_screen()
     print("\n--- Hapus Tugas ---")
     if not print_task_list(tasks):
@@ -149,7 +150,7 @@ def delete_task(tasks: list):
 
         if 0 <= index < len(tasks):
             removed = tasks.pop(index)
-            save_task(tasks)
+            save_task(tasks, filename)
             print(f"Tugas '{removed['title']}' berhasil dihapus!")
         else:
             print("Nomor tugas tidak valid!")
