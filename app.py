@@ -1,171 +1,205 @@
 import json
 import os
 
-file_name = "task.json"
+# CONSTANT: Biasanya ditulis dengan huruf kapital semua di Python (PEP 8)
+FILE_NAME = "task.json"
 
-def load_task() :
-    if not os.path.exists(file_name) : #Cek apakah json ada
-        return [] #return kosong
 
-    with open(file_name, 'r') as file :
-        return json.load(file) #ubah string json ke list
+def clear_screen():
+    # Fungsi tambahan untuk membersihkan layar terminal
+    # 'cls' untuk Windows, 'clear' untuk Mac/Linux
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-def save_task(tasks) :
-    with open(file_name, 'w') as file : #tulis file_name dengan variabel tasks (ditimpa)
+
+def load_task() -> list:  # '-> list' adalah Type Hint bahwa fungsi ini mengembalikan Array/List
+    if not os.path.exists(FILE_NAME):
+        return []
+
+    try:
+        with open(FILE_NAME, 'r') as file:
+            return json.load(file)
+    except json.JSONDecodeError:
+        # Jika file ada tapi isinya corrupt/bukan JSON valid, kembalikan list kosong
+        print("Peringatan: File data rusak. Memulai dengan daftar kosong.")
+        return []
+
+
+def save_task(tasks: list):  # ': list' adalah Type Hint untuk parameter
+    with open(FILE_NAME, 'w') as file:
         json.dump(tasks, file, indent=4)
 
 
-def detail_task(task):
-    # Parameter 'task' di sini hanya menerima 1 Object (Dictionary), bukan seluruh list.
+# --- FUNGSI HELPER BARU (Penerapan DRY) ---
+def print_task_list(tasks: list) -> bool:
+    """Mencetak daftar tugas. Mengembalikan True jika ada tugas, False jika kosong."""
+    if not tasks:
+        print("Belum ada tugas!")
+        return False
+
+    for index, task in enumerate(tasks, start=1):
+        status = "[x]" if task["done"] else "[ ]"
+        print(f"{index}. {status} {task['title']}")
+    return True
+
+
+# ------------------------------------------
+
+def detail_task(task: dict):
+    clear_screen()
     print("\n" + "=" * 30)
     print("        DETAIL TUGAS")
     print("=" * 30)
     print(f"Judul     : {task['title']}")
-
-    # Ternary operator untuk status
     print(f"Status    : {'Selesai [x]' if task['done'] else 'Belum Selesai [ ]'}")
-
-    # Kita gunakan .get() agar aman. Jika versi data json lama tidak punya key 'description',
-    # Python tidak akan error, tapi mereturn default value "-" (seperti fitur nullish coalescing '??' di PHP)
     print(f"Deskripsi : {task.get('description', '-')}")
     print(f"Estimasi  : {task.get('estimate', '-')}")
     print("=" * 30)
+    input("Tekan Enter untuk kembali...")
 
-    input("Tekan Enter untuk kembali...")  # Menahan layar agar user sempat membaca
 
-
-def display_tasks(tasks):
+def display_tasks(tasks: list):
     while True:
+        clear_screen()
         print("\n--- Daftar To-Do List ---")
-        if not tasks:
-            print("Belum ada tugas!")
-            return  # Kembali ke menu utama (keluar dari display_tasks)
 
-        for index, task in enumerate(tasks, start=1):
-            status = "[x]" if task["done"] else "[ ]"
-            print(f"{index}. {status} {task['title']}")
+        # Panggil helper. Jika kosong (False), langsung hentikan loop
+        if not print_task_list(tasks):
+            input("\nTekan Enter untuk kembali...")
+            return
 
         print("-------------------------")
         print("[0] Kembali ke Menu Utama")
 
-        pilihan = input("Pilih nomor tugas untuk lihat detail: ")
+        pilihan = input("\nPilih nomor tugas untuk lihat detail (atau 0): ")
 
         if pilihan == "0":
-            break  # Hentikan sub-menu, kembali ke menu utama
+            break
 
         try:
-            # Konversi input ke integer untuk mencari index array
             task_index = int(pilihan) - 1
-
-            # Validasi apakah index ada di dalam array
             if 0 <= task_index < len(tasks):
-                # Kirim SATU object task ke fungsi detail_task
                 detail_task(tasks[task_index])
             else:
-                print("Nomor tugas tidak valid!")
+                input("Nomor tugas tidak valid! Tekan Enter untuk mengulang...")
         except ValueError:
-            print("Harap masukkan angka yang valid!")
+            input("Harap masukkan angka yang valid! Tekan Enter untuk mengulang...")
 
-def add_task(tasks) :
-    title = input("Masukkan tugas baru: ") #input untuk user memasukkan task
-    description = input("Deskripsikan tugas baru: ")
-    estimate = input("Masukkan estimasi waktu selesai tugas baru: ")
+
+def add_task(tasks: list):
+    clear_screen()
+    print("\n--- Tambah Tugas Baru ---")
+
+    # Validasi input agar judul tidak boleh kosong
+    while True:
+        title = input("Masukkan judul tugas: ").strip()  # .strip() mirip trim() di PHP/JS
+        if title:
+            break
+        print("Judul tidak boleh kosong!\n")
+
+    description = input("Deskripsikan tugas: ").strip()
+    estimate = input("Estimasi waktu selesai: ").strip()
+
     new_task = {
         "title": title,
-        "description": description,
-        "estimate": estimate,
+        "description": description if description else "-",
+        "estimate": estimate if estimate else "-",
         "done": False,
     }
-    tasks.append(new_task) # array push, untuk memasukkan data ke array
+    tasks.append(new_task)
     save_task(tasks)
-    print("Tugas berhasil ditambahkan!")
+    input("\nTugas berhasil ditambahkan! Tekan Enter untuk kembali...")
 
-def complete_task(tasks) :
-    for index, task in enumerate(tasks, start=1):
-        status = "[x]" if task["done"] else "[ ]"
-        print(f"{index}. {status} {task['title']}")
-    try :
-        task_num = int(input("Nomor tugas yang sudah selesai: ")) #input yang dibuat wajib integer
-        index = task_num - 1 # karena array dimulai dari 0 jadi kurangi 1
 
-        if 0 <= index < len(tasks) :
-            tasks[index]["done"] = True
-            save_task(tasks)
-            print("Tugas ditandai selesai.!")
-        else :
-            print("Nomor tugas tidak valid!")
-    except ValueError :
-        print("Tolong masukkan angka yang valid!")
+def complete_task(tasks: list):
+    clear_screen()
+    print("\n--- Tandai Tugas Selesai ---")
+    if not print_task_list(tasks):
+        input("\nTekan Enter untuk kembali...")
+        return
 
-def delete_task(tasks) :
-    for index, task in enumerate(tasks, start=1):
-        status = "[x]" if task["done"] else "[ ]"
-        print(f"{index}. {status} {task['title']}")
-    try :
-        task_num = int(input("Nomor tugas yang selesai: "))
+    try:
+        task_num = int(input("\nNomor tugas yang sudah selesai: "))
         index = task_num - 1
 
-        if 0 <= index < len(tasks) :
-            removed = tasks.pop(index) #pop() menghapus dari list
-            save_task(tasks)
-            print(f"Tugas '{removed['title']}' berhasil dihapus!")
-        else :
+        if 0 <= index < len(tasks):
+            if tasks[index]["done"]:
+                print("Tugas ini memang sudah selesai.")
+            else:
+                tasks[index]["done"] = True
+                save_task(tasks)
+                print("Tugas berhasil ditandai selesai!")
+        else:
             print("Nomor tugas tidak valid!")
-    except ValueError :
+    except ValueError:
         print("Tolong masukkan angka yang valid!")
 
-def main() :
-    tasks = load_task() #muat data
+    input("Tekan Enter untuk kembali...")
 
-    while True : # infinite loop untuk run aplikasi
-        # --- PREVIEW DASHBOARD ---
+
+def delete_task(tasks: list):
+    clear_screen()
+    print("\n--- Hapus Tugas ---")
+    if not print_task_list(tasks):
+        input("\nTekan Enter untuk kembali...")
+        return
+
+    try:
+        task_num = int(input("\nNomor tugas yang ingin dihapus: "))
+        index = task_num - 1
+
+        if 0 <= index < len(tasks):
+            removed = tasks.pop(index)
+            save_task(tasks)
+            print(f"Tugas '{removed['title']}' berhasil dihapus!")
+        else:
+            print("Nomor tugas tidak valid!")
+    except ValueError:
+        print("Tolong masukkan angka yang valid!")
+
+    input("Tekan Enter untuk kembali...")
+
+
+def main():
+    tasks = load_task()
+
+    while True:
+        clear_screen()
         print("\n=== PREVIEW TUGAS ===")
+        # Panggil helper tanpa index nomor (karena ini cuma preview)
         if not tasks:
             print("Belum ada tugas! Silakan tambah tugas baru.")
-            # HAPUS 'return' dari sini agar aplikasi tidak tertutup
         else:
             for task in tasks:
                 status = "[x]" if task["done"] else "[ ]"
                 print(f"{status} {task['title']}")
         print("-------------------------\n")
 
-        print("\n=== Menu To-do List ===\n")
-        print("[1] Lihat Tugas")
+        print("=== Menu To-do List ===")
+        print("[1] Lihat Daftar & Detail")
         print("[2] Tambah Tugas")
         print("[3] Tandai Selesai")
         print("[4] Hapus Tugas")
         print("[5] Keluar")
 
-        pilihan = int(input("Pilih menu (1-5): "))
+        # MENGGUNAKAN STRING untuk mencegah ValueError jika menekan Enter
+        pilihan = input("\nPilih menu (1-5): ").strip()
 
-        # if pilihan == 1 :
-        #     display_tasks(tasks)
-        # elif pilihan == 2 :
-        #     add_task(tasks)
-        # elif pilihan == 3 :
-        #     complete_task(tasks)
-        # elif pilihan == 4 :
-        #     delete_task(tasks)
-        # elif pilihan == 5 :
-        #     print("Sampai Jumpa!")
-        #     break
-        # else :
-        #     print("Pilihan tidak valid!")
-
-        match pilihan :
-            case 1 :
+        match pilihan:
+            case "1":
                 display_tasks(tasks)
-            case 2 :
+            case "2":
                 add_task(tasks)
-            case 3 :
+            case "3":
                 complete_task(tasks)
-            case 4 :
+            case "4":
                 delete_task(tasks)
-            case 5 :
-                print("Sampai Jumpa!")
+            case "5":
+                clear_screen()
+                print("Terima kasih! Sampai Jumpa!")
                 break
-            case _ :
-                print("Pilihan tidak valid!")
+            case _:
+                input("Pilihan tidak valid! Tekan Enter untuk mengulang...")
+
 
 if __name__ == "__main__":
     main()
