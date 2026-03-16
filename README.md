@@ -42,11 +42,3 @@ Aplikasi ini menggunakan pytest dan fitur monkeypatch untuk menyimulasikan input
     ```Bash
     pytest test_app.py -v
 3. Terminal akan menampilkan laporan hijau jika semua skenario logika dan pencegahan error berhasil dilewati secara otomatis.
-
-## 💡 Konsep Pembelajaran (Dari PHP/JS ke Python)
-Proyek ini dibangun dengan menerapkan beberapa konsep esensial Python bagi developer yang beralih dari PHP/JavaScript:
-- Penggunaan List (mirip Array terindeks) dan Dictionary (mirip Object/Associative Array).
-- Pembacaan & penulisan File Handling menggunakan block with open(...) yang otomatis menangani penutupan file.
-- Penggunaan modul bawaan json (json.dump / json.load) ekuivalen dengan JSON.stringify dan JSON.parse.
-- Dependency Injection sederhana pada parameter fungsi untuk kemudahan mocking saat testing.
-- Penggunaan Type Hinting (-> list, : dict) ala TypeScript untuk integrasi IDE yang lebih baik.
